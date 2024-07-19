@@ -43,8 +43,29 @@ def message(msg, color):
     mesg = font_style.render(msg, True, color)
     screen.blit(mesg, [screen_width / 6, screen_height / 3])
 
-# Main function
+# Add a global variable for high score
+high_score = 0
+
+# Function to update the high score
+def update_high_score(score):
+    global high_score
+    if score > high_score:
+        high_score = score
+
+# Function to display the high score
+def display_high_score():
+    value = score_font.render("High Score: " + str(high_score), True, white)
+    screen.blit(value, [screen_width - 200, 0])
+
+# Function to reset the game
+def reset_game():
+    global high_score
+    update_high_score(Length_of_snake - 1)
+    gameLoop()
+
+# Main function with added functionality
 def gameLoop():
+    global Length_of_snake
     game_over = False
     game_close = False
 
@@ -67,6 +88,7 @@ def gameLoop():
             screen.fill(blue)
             message("You Lost! Press Q-Quit or C-Play Again", red)
             Your_score(Length_of_snake - 1)
+            display_high_score()
             pygame.display.update()
 
             for event in pygame.event.get():
@@ -75,7 +97,7 @@ def gameLoop():
                         game_over = True
                         game_close = False
                     if event.key == pygame.K_c:
-                        gameLoop()
+                        reset_game()
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -113,6 +135,7 @@ def gameLoop():
 
         our_snake(snake_block, snake_List)
         Your_score(Length_of_snake - 1)
+        display_high_score()
 
         pygame.display.update()
 
