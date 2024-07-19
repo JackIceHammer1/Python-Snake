@@ -21,6 +21,7 @@ green = (0, 255, 0)
 blue = (50, 153, 213)
 purple = (128, 0, 128)
 orange = (255, 165, 0)
+pink = (255, 105, 180)
 
 # Dynamic backgrounds
 background_colors = [blue, (70, 130, 180), (100, 149, 237), (135, 206, 235)]
@@ -39,6 +40,8 @@ snake_block = 10
 # Load sounds
 eat_sound = pygame.mixer.Sound("eat.wav")
 game_over_sound = pygame.mixer.Sound("game_over.wav")
+level_up_sound = pygame.mixer.Sound("level_up.wav")
+power_up_sound = pygame.mixer.Sound("power_up.wav")
 
 # Set the font style and size
 font_style = pygame.font.SysFont(None, 50)
@@ -88,11 +91,12 @@ def display_high_score():
 
 # Function to reset the game
 def reset_game():
-    global Length_of_snake, snake_speed, start_time, current_background
+    global Length_of_snake, snake_speed, start_time, current_background, controls
     update_high_score(Length_of_snake - 1)
     snake_speed = initial_speed
     start_time = time.time()
     current_background = 0
+    controls = load_controls()
     gameLoop()
 
 # Function to draw obstacles
@@ -119,7 +123,8 @@ def start_screen():
         "Press P to Pause",
         "Eat green food to grow",
         "Avoid purple obstacles",
-        "Orange food changes speed"
+        "Orange food changes speed",
+        "Pink food for power-ups"
     ]
     y_offset = screen_height / 3 + 50
     for line in instructions:
@@ -205,12 +210,67 @@ def game_over_screen(score, time_elapsed):
 # Function to change snake color
 def change_snake_color():
     global snake_color
-    colors = [black, red, green, yellow, blue, purple, orange]
+    colors = [black, red, green, yellow, blue, purple, orange, pink]
     snake_color = random.choice(colors)
 
-# Main function with added functionality
+# Function to load custom controls
+def load_controls():
+    default_controls = {
+        "left": pygame.K_LEFT,
+        "right": pygame.K_RIGHT,
+        "up": pygame.K_UP,
+        "down": pygame.K_DOWN,
+        "pause": pygame.K_p,
+        "change_color": pygame.K_c
+    }
+    if os.path.exists("controls.txt"):
+        with open("controls.txt", "r") as file:
+            controls = eval(file.read())
+    else:
+        controls = default_controls
+    return controls
+
+# Function to save custom controls
+def save_controls(controls):
+    with open("controls.txt", "w") as file:
+        file.write(str(controls))
+
+# Function to handle control customization
+def customize_controls():
+    screen.fill(background_colors[current_background])
+    message("Customize Controls", yellow)
+    instructions = [
+        "Press the key for each action",
+        "Move Left (Press L)",
+        "Move Right (Press R)",
+        "Move Up (Press U)",
+        "Move Down (Press D)",
+        "Pause (Press P)",
+        "Change Color (Press C)"
+    ]
+    y_offset = screen_height / 3 + 50
+    for line in instructions:
+        instr = score_font.render(line, True, white)
+        screen.blit(instr, [screen_width / 6, y_offset])
+        y_offset += 30
+    pygame.display.update()
+    custom_controls = {}
+    actions = ["left", "right", "up", "down", "pause", "change_color"]
+    for action in actions:
+        key_selected = False
+        while not key_selected:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    quit()
+                if event.type == pygame.KEYDOWN:
+                    custom_controls[action] = event.key
+                    key_selected = True
+    save_controls(custom_controls)
+
+# Main game loop
 def gameLoop():
-    global Length_of_snake, snake_speed
+    global high_score, Length_of_snake, snake_speed, start_time, current_background, controls
     game_over = False
     game_close = False
 
@@ -223,48 +283,42 @@ def gameLoop():
     snake_List = []
     Length_of_snake = 1
 
-    # Create food at random position
     foodx = round(random.randrange(0, screen_width - snake_block) / 10.0) * 10.0
     foody = round(random.randrange(0, screen_height - snake_block) / 10.0) * 10.0
 
-    # Create special food at random position
     special_food_x = round(random.randrange(0, screen_width - snake_block) / 10.0) * 10.0
     special_food_y = round(random.randrange(0, screen_height - snake_block) / 10.0) * 10.0
 
-    # Create obstacles
     obstacles = create_obstacles(5)
-
-    # Set initial level
     level = 1
-
-    # Set start time
     start_time = time.time()
+    controls = load_controls()
 
     while not game_over:
 
         while game_close == True:
             game_over_screen(Length_of_snake - 1, int(time.time() - start_time))
-            pygame.display.update()
+            game_over = True
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 game_over = True
             if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_LEFT:
+                if event.key == controls["left"]:
                     x1_change = -snake_block
                     y1_change = 0
-                elif event.key == pygame.K_RIGHT:
+                elif event.key == controls["right"]:
                     x1_change = snake_block
                     y1_change = 0
-                elif event.key == pygame.K_UP:
+                elif event.key == controls["up"]:
+                    x1_change = 0
                     y1_change = -snake_block
+                elif event.key == controls["down"]:
                     x1_change = 0
-                elif event.key == pygame.K_DOWN:
                     y1_change = snake_block
-                    x1_change = 0
-                elif event.key == pygame.K_p:
+                elif event.key == controls["pause"]:
                     pause_menu()
-                elif event.key == pygame.K_c:
+                elif event.key == controls["change_color"]:
                     change_snake_color()
 
         if x1 >= screen_width or x1 < 0 or y1 >= screen_height or y1 < 0:
@@ -309,12 +363,13 @@ def gameLoop():
             # Increase the level and speed every 5 food items eaten
             if Length_of_snake % 5 == 0:
                 level += 1
+                pygame.mixer.Sound.play(level_up_sound)
                 snake_speed += 5
                 current_background = (current_background + 1) % len(background_colors)
                 obstacles = create_obstacles(level + 4)
 
         if x1 == special_food_x and y1 == special_food_y:
-            pygame.mixer.Sound.play(eat_sound)
+            pygame.mixer.Sound.play(power_up_sound)
             special_food_x = round(random.randrange(0, screen_width - snake_block) / 10.0) * 10.0
             special_food_y = round(random.randrange(0, screen_height - snake_block) / 10.0) * 10.0
 
