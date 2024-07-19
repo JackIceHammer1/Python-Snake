@@ -17,6 +17,7 @@ black = (0, 0, 0)
 red = (213, 50, 80)
 green = (0, 255, 0)
 blue = (50, 153, 213)
+purple = (128, 0, 128)
 
 # Set the snake speed
 snake_speed = 15
@@ -59,9 +60,38 @@ def display_high_score():
 
 # Function to reset the game
 def reset_game():
-    global high_score
+    global Length_of_snake
     update_high_score(Length_of_snake - 1)
     gameLoop()
+
+# Function to draw obstacles
+def draw_obstacles(obstacles):
+    for obstacle in obstacles:
+        pygame.draw.rect(screen, purple, [obstacle[0], obstacle[1], snake_block, snake_block])
+
+# Function to create obstacles
+def create_obstacles(num_obstacles):
+    obstacles = []
+    for _ in range(num_obstacles):
+        obstacle_x = round(random.randrange(0, screen_width - snake_block) / 10.0) * 10.0
+        obstacle_y = round(random.randrange(0, screen_height - snake_block) / 10.0) * 10.0
+        obstacles.append([obstacle_x, obstacle_y])
+    return obstacles
+
+# Start screen function
+def start_screen():
+    screen.fill(blue)
+    message("Welcome to Snake Game! Press S to Start", yellow)
+    pygame.display.update()
+    start = False
+    while not start:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                quit()
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_s:
+                    start = True
 
 # Main function with added functionality
 def gameLoop():
@@ -81,6 +111,9 @@ def gameLoop():
     # Create food at random position
     foodx = round(random.randrange(0, screen_width - snake_block) / 10.0) * 10.0
     foody = round(random.randrange(0, screen_height - snake_block) / 10.0) * 10.0
+
+    # Create obstacles
+    obstacles = create_obstacles(5)
 
     while not game_over:
 
@@ -133,7 +166,12 @@ def gameLoop():
             if x == snake_Head:
                 game_close = True
 
+        for obstacle in obstacles:
+            if x1 == obstacle[0] and y1 == obstacle[1]:
+                game_close = True
+
         our_snake(snake_block, snake_List)
+        draw_obstacles(obstacles)
         Your_score(Length_of_snake - 1)
         display_high_score()
 
@@ -151,6 +189,9 @@ def gameLoop():
 
 # Create a clock object
 clock = pygame.time.Clock()
+
+# Show the start screen
+start_screen()
 
 # Run the game
 gameLoop()
