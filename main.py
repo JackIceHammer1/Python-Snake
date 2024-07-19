@@ -1,6 +1,7 @@
 import pygame
 import time
 import random
+import os
 
 # Initialize Pygame and the mixer for sound
 pygame.init()
@@ -54,11 +55,24 @@ def message(msg, color):
 # Add a global variable for high score
 high_score = 0
 
+# Load high score from file
+def load_high_score():
+    global high_score
+    if os.path.exists("high_score.txt"):
+        with open("high_score.txt", "r") as file:
+            high_score = int(file.read())
+
+# Save high score to file
+def save_high_score():
+    with open("high_score.txt", "w") as file:
+        file.write(str(high_score))
+
 # Function to update the high score
 def update_high_score(score):
     global high_score
     if score > high_score:
         high_score = score
+        save_high_score()
 
 # Function to display the high score
 def display_high_score():
@@ -67,9 +81,10 @@ def display_high_score():
 
 # Function to reset the game
 def reset_game():
-    global Length_of_snake, snake_speed
+    global Length_of_snake, snake_speed, start_time
     update_high_score(Length_of_snake - 1)
     snake_speed = initial_speed
+    start_time = time.time()
     gameLoop()
 
 # Function to draw obstacles
@@ -86,10 +101,23 @@ def create_obstacles(num_obstacles):
         obstacles.append([obstacle_x, obstacle_y])
     return obstacles
 
-# Start screen function
+# Start screen function with instructions
 def start_screen():
     screen.fill(blue)
-    message("Welcome to Snake Game! Press S to Start", yellow)
+    message("Welcome to Snake Game!", yellow)
+    instructions = [
+        "Press S to Start",
+        "Use Arrow Keys to Move",
+        "Press P to Pause",
+        "Eat green food to grow",
+        "Avoid purple obstacles",
+        "Orange food changes speed"
+    ]
+    y_offset = screen_height / 3 + 50
+    for line in instructions:
+        instr = score_font.render(line, True, white)
+        screen.blit(instr, [screen_width / 6, y_offset])
+        y_offset += 30
     pygame.display.update()
     start = False
     while not start:
@@ -118,6 +146,12 @@ def pause_game():
 # Function to draw special food
 def draw_special_food(x, y, color):
     pygame.draw.rect(screen, color, [x, y, snake_block, snake_block])
+
+# Function to display timer
+def display_timer(start_time):
+    elapsed_time = int(time.time() - start_time)
+    timer_text = score_font.render("Time: " + str(elapsed_time), True, white)
+    screen.blit(timer_text, [screen_width - 200, 30])
 
 # Main function with added functionality
 def gameLoop():
@@ -148,6 +182,9 @@ def gameLoop():
     # Set initial level
     level = 1
 
+    # Set start time
+    start_time = time.time()
+
     while not game_over:
 
         while game_close == True:
@@ -155,6 +192,7 @@ def gameLoop():
             message("You Lost! Press Q-Quit or C-Play Again", red)
             Your_score(Length_of_snake - 1)
             display_high_score()
+            display_timer(start_time)
             pygame.display.update()
 
             for event in pygame.event.get():
@@ -213,6 +251,7 @@ def gameLoop():
         draw_obstacles(obstacles)
         Your_score(Length_of_snake - 1)
         display_high_score()
+        display_timer(start_time)
 
         pygame.display.update()
 
@@ -246,6 +285,9 @@ def gameLoop():
 
 # Create a clock object
 clock = pygame.time.Clock()
+
+# Load high score
+load_high_score()
 
 # Show the start screen
 start_screen()
