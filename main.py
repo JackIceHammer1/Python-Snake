@@ -22,6 +22,13 @@ blue = (50, 153, 213)
 purple = (128, 0, 128)
 orange = (255, 165, 0)
 
+# Dynamic backgrounds
+background_colors = [blue, (70, 130, 180), (100, 149, 237), (135, 206, 235)]
+current_background = 0
+
+# Snake color
+snake_color = black
+
 # Set the initial snake speed
 initial_speed = 15
 snake_speed = initial_speed
@@ -45,7 +52,7 @@ def Your_score(score):
 # Function to draw the snake
 def our_snake(snake_block, snake_List):
     for x in snake_List:
-        pygame.draw.rect(screen, black, [x[0], x[1], snake_block, snake_block])
+        pygame.draw.rect(screen, snake_color, [x[0], x[1], snake_block, snake_block])
 
 # Function to display the message
 def message(msg, color):
@@ -81,10 +88,11 @@ def display_high_score():
 
 # Function to reset the game
 def reset_game():
-    global Length_of_snake, snake_speed, start_time
+    global Length_of_snake, snake_speed, start_time, current_background
     update_high_score(Length_of_snake - 1)
     snake_speed = initial_speed
     start_time = time.time()
+    current_background = 0
     gameLoop()
 
 # Function to draw obstacles
@@ -103,7 +111,7 @@ def create_obstacles(num_obstacles):
 
 # Start screen function with instructions
 def start_screen():
-    screen.fill(blue)
+    screen.fill(background_colors[current_background])
     message("Welcome to Snake Game!", yellow)
     instructions = [
         "Press S to Start",
@@ -129,10 +137,16 @@ def start_screen():
                 if event.key == pygame.K_s:
                     start = True
 
-# Pause function
-def pause_game():
+# Pause menu function
+def pause_menu():
     paused = True
-    message("Paused. Press P to Resume", yellow)
+    menu_options = ["Resume (Press P)", "Restart (Press R)", "Quit (Press Q)"]
+    screen.fill(background_colors[current_background])
+    y_offset = screen_height / 3
+    for option in menu_options:
+        opt = score_font.render(option, True, yellow)
+        screen.blit(opt, [screen_width / 6, y_offset])
+        y_offset += 50
     pygame.display.update()
     while paused:
         for event in pygame.event.get():
@@ -142,6 +156,11 @@ def pause_game():
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_p:
                     paused = False
+                elif event.key == pygame.K_r:
+                    reset_game()
+                elif event.key == pygame.K_q:
+                    pygame.quit()
+                    quit()
 
 # Function to draw special food
 def draw_special_food(x, y, color):
@@ -152,6 +171,42 @@ def display_timer(start_time):
     elapsed_time = int(time.time() - start_time)
     timer_text = score_font.render("Time: " + str(elapsed_time), True, white)
     screen.blit(timer_text, [screen_width - 200, 30])
+
+# Function to display game over statistics
+def game_over_screen(score, time_elapsed):
+    screen.fill(background_colors[current_background])
+    message("Game Over!", red)
+    stats = [
+        f"Score: {score}",
+        f"Time: {time_elapsed} seconds",
+        f"High Score: {high_score}"
+    ]
+    y_offset = screen_height / 3 + 50
+    for stat in stats:
+        stat_text = score_font.render(stat, True, white)
+        screen.blit(stat_text, [screen_width / 6, y_offset])
+        y_offset += 30
+    menu_options = ["Restart (Press R)", "Quit (Press Q)"]
+    for option in menu_options:
+        opt = score_font.render(option, True, yellow)
+        screen.blit(opt, [screen_width / 6, y_offset])
+        y_offset += 50
+    pygame.display.update()
+    game_over = True
+    while game_over:
+        for event in pygame.event.get():
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_r:
+                    reset_game()
+                elif event.key == pygame.K_q:
+                    pygame.quit()
+                    quit()
+
+# Function to change snake color
+def change_snake_color():
+    global snake_color
+    colors = [black, red, green, yellow, blue, purple, orange]
+    snake_color = random.choice(colors)
 
 # Main function with added functionality
 def gameLoop():
@@ -188,20 +243,8 @@ def gameLoop():
     while not game_over:
 
         while game_close == True:
-            screen.fill(blue)
-            message("You Lost! Press Q-Quit or C-Play Again", red)
-            Your_score(Length_of_snake - 1)
-            display_high_score()
-            display_timer(start_time)
+            game_over_screen(Length_of_snake - 1, int(time.time() - start_time))
             pygame.display.update()
-
-            for event in pygame.event.get():
-                if event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_q:
-                        game_over = True
-                        game_close = False
-                    if event.key == pygame.K_c:
-                        reset_game()
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -220,14 +263,16 @@ def gameLoop():
                     y1_change = snake_block
                     x1_change = 0
                 elif event.key == pygame.K_p:
-                    pause_game()
+                    pause_menu()
+                elif event.key == pygame.K_c:
+                    change_snake_color()
 
         if x1 >= screen_width or x1 < 0 or y1 >= screen_height or y1 < 0:
             pygame.mixer.Sound.play(game_over_sound)
             game_close = True
         x1 += x1_change
         y1 += y1_change
-        screen.fill(blue)
+        screen.fill(background_colors[current_background])
         pygame.draw.rect(screen, green, [foodx, foody, snake_block, snake_block])
         draw_special_food(special_food_x, special_food_y, orange)
         snake_Head = []
@@ -265,6 +310,7 @@ def gameLoop():
             if Length_of_snake % 5 == 0:
                 level += 1
                 snake_speed += 5
+                current_background = (current_background + 1) % len(background_colors)
                 obstacles = create_obstacles(level + 4)
 
         if x1 == special_food_x and y1 == special_food_y:
