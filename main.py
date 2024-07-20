@@ -290,9 +290,43 @@ def customize_controls():
                             save_controls(controls)
                             break
 
+# Function to draw power-ups
+def draw_power_up(x, y, color):
+    pygame.draw.rect(screen, color, [x, y, snake_block, snake_block])
+
+# Function to create power-ups
+def create_power_up():
+    power_up_x = round(random.randrange(0, screen_width - snake_block) / 10.0) * 10.0
+    power_up_y = round(random.randrange(0, screen_height - snake_block) / 10.0) * 10.0
+    return power_up_x, power_up_y
+
+# Function to apply power-ups
+def apply_power_up(effect, duration):
+    global snake_speed, power_up_active, power_up_end_time
+    if effect == "invincibility":
+        snake_speed += 10  # Increase speed
+    elif effect == "double_score":
+        snake_speed += 5  # Increase speed
+    power_up_active = effect
+    power_up_end_time = time.time() + duration
+
+# Function to reset power-up effects
+def reset_power_up_effects():
+    global snake_speed, power_up_active
+    if power_up_active == "invincibility":
+        snake_speed -= 10
+    elif power_up_active == "double_score":
+        snake_speed -= 5
+    power_up_active = None
+
+# Initialize power-up variables
+power_up_x, power_up_y = create_power_up()
+power_up_active = None
+power_up_end_time = 0
+
 # Main game loop
 def gameLoop():
-    global high_score, Length_of_snake, snake_speed, start_time, current_background, controls
+    global high_score, Length_of_snake, snake_speed, start_time, current_background, controls, power_up_x, power_up_y, power_up_active, power_up_end_time
     game_over = False
     game_close = False
 
@@ -351,6 +385,7 @@ def gameLoop():
         screen.fill(background_colors[current_background])
         pygame.draw.rect(screen, green, [foodx, foody, snake_block, snake_block])
         draw_special_food(special_food_x, special_food_y, orange)
+        draw_power_up(power_up_x, power_up_y, pink)
         snake_Head = []
         snake_Head.append(x1)
         snake_Head.append(y1)
@@ -373,8 +408,6 @@ def gameLoop():
         Your_score(Length_of_snake - 1)
         display_high_score()
         display_timer(start_time)
-
-        pygame.display.update()
 
         if x1 == foodx and y1 == foody:
             pygame.mixer.Sound.play(eat_sound)
@@ -400,6 +433,14 @@ def gameLoop():
                 snake_speed += 5
             else:
                 snake_speed = max(10, snake_speed - 5)
+
+        if x1 == power_up_x and y1 == power_up_y:
+            pygame.mixer.Sound.play(power_up_sound)
+            power_up_x, power_up_y = create_power_up()
+            apply_power_up(random.choice(["invincibility", "double_score"]), 10)
+
+        if power_up_active and time.time() > power_up_end_time:
+            reset_power_up_effects()
 
         clock.tick(snake_speed)
 
