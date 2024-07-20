@@ -502,6 +502,139 @@ def display_leaderboard():
                 pygame.quit()
                 quit()
 
+# Function to display the settings menu
+def settings_menu():
+    settings_running = True
+    selected_option = 0
+    options = ["Change Snake Color", "Change Background Color", "Toggle Sound", "Back to Main Menu"]
+    colors = [white, yellow, red, blue, green, orange, purple, pink]
+    backgrounds = [black, gray, dark_gray, navy, olive, maroon]
+
+    while settings_running:
+        screen.fill(black)
+        for i, option in enumerate(options):
+            color = yellow if i == selected_option else white
+            message(option, color, i - 2, size="medium")
+
+        pygame.display.update()
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                quit()
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_UP:
+                    selected_option = (selected_option - 1) % len(options)
+                elif event.key == pygame.K_DOWN:
+                    selected_option = (selected_option + 1) % len(options)
+                elif event.key == pygame.K_RETURN:
+                    if options[selected_option] == "Change Snake Color":
+                        change_snake_color_menu(colors)
+                    elif options[selected_option] == "Change Background Color":
+                        change_background_color_menu(backgrounds)
+                    elif options[selected_option] == "Toggle Sound":
+                        toggle_sound()
+                    elif options[selected_option] == "Back to Main Menu":
+                        settings_running = False
+
+# Function to display and handle the snake color change menu
+def change_snake_color_menu(colors):
+    color_menu_running = True
+    selected_color = 0
+
+    while color_menu_running:
+        screen.fill(black)
+        for i, color in enumerate(colors):
+            rect_color = color
+            text_color = white if i != selected_color else yellow
+            pygame.draw.rect(screen, rect_color, [screen_width // 2 - 50, screen_height // 2 + (i * 30) - 100, 100, 30])
+            message(f"Color {i + 1}", text_color, i - 3, size="medium")
+
+        pygame.display.update()
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                quit()
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_UP:
+                    selected_color = (selected_color - 1) % len(colors)
+                elif event.key == pygame.K_DOWN:
+                    selected_color = (selected_color + 1) % len(colors)
+                elif event.key == pygame.K_RETURN:
+                    snake_color = colors[selected_color]
+                    color_menu_running = False
+
+# Function to display and handle the background color change menu
+def change_background_color_menu(backgrounds):
+    background_menu_running = True
+    selected_background = 0
+
+    while background_menu_running:
+        screen.fill(black)
+        for i, background in enumerate(backgrounds):
+            rect_color = background
+            text_color = white if i != selected_background else yellow
+            pygame.draw.rect(screen, rect_color, [screen_width // 2 - 50, screen_height // 2 + (i * 30) - 100, 100, 30])
+            message(f"Background {i + 1}", text_color, i - 3, size="medium")
+
+        pygame.display.update()
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                quit()
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_UP:
+                    selected_background = (selected_background - 1) % len(backgrounds)
+                elif event.key == pygame.K_DOWN:
+                    selected_background = (selected_background + 1) % len(backgrounds)
+                elif event.key == pygame.K_RETURN:
+                    current_background = backgrounds[selected_background]
+                    background_menu_running = False
+
+def main_menu():
+    menu_running = True
+    selected_option = 0
+    options = ["Start Game", "Settings", "Leaderboard", "Quit"]
+
+    while menu_running:
+        screen.fill(black)
+        for i, option in enumerate(options):
+            color = yellow if i == selected_option else white
+            message(option, color, i - 2, size="medium")
+
+        pygame.display.update()
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                quit()
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_UP:
+                    selected_option = (selected_option - 1) % len(options)
+                elif event.key == pygame.K_DOWN:
+                    selected_option = (selected_option + 1) % len(options)
+                elif event.key == pygame.K_RETURN:
+                    if options[selected_option] == "Start Game":
+                        gameLoop()
+                    elif options[selected_option] == "Settings":
+                        settings_menu()
+                    elif options[selected_option] == "Leaderboard":
+                        display_leaderboard()
+                    elif options[selected_option] == "Quit":
+                        pygame.quit()
+                        quit()
+
+# Function to toggle sound on and off
+def toggle_sound():
+    global sound_enabled
+    sound_enabled = not sound_enabled
+    if sound_enabled:
+        pygame.mixer.music.unpause()
+    else:
+        pygame.mixer.music.pause()
+
 # Function to load levels
 def load_levels():
     try:
