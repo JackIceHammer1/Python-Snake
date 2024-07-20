@@ -271,21 +271,24 @@ def change_snake_color():
     colors = [black, red, green, yellow, blue, purple, orange, pink]
     snake_color = random.choice(colors)
 
-# Function to load custom controls
+default_controls = {
+    "left": pygame.K_LEFT,
+    "right": pygame.K_RIGHT,
+    "up": pygame.K_UP,
+    "down": pygame.K_DOWN,
+    "pause": pygame.K_p,
+    "change_color": pygame.K_c
+}
+
+# Load controls from a configuration file or use default controls
 def load_controls():
-    default_controls = {
-        "left": pygame.K_LEFT,
-        "right": pygame.K_RIGHT,
-        "up": pygame.K_UP,
-        "down": pygame.K_DOWN,
-        "pause": pygame.K_p,
-        "change_color": pygame.K_c
-    }
-    if os.path.exists("controls.txt"):
-        with open("controls.txt", "r") as file:
-            controls = eval(file.read())
-    else:
+    try:
+        with open("controls.json", "r") as file:
+            controls = json.load(file)
+    except (FileNotFoundError, json.JSONDecodeError):
         controls = default_controls
+        with open("controls.json", "w") as file:
+            json.dump(controls, file)
     return controls
 
 # Function to save custom controls
@@ -799,7 +802,9 @@ def gameLoop():
     pygame.quit()
     quit()
 
-# Function to toggle sound on and off
+# Initialize sound settings
+sound_enabled = True  # Default to enabled
+
 def toggle_sound():
     global sound_enabled
     sound_enabled = not sound_enabled
@@ -851,19 +856,20 @@ def start_next_level(level, levels):
 
 # Main loop
 def gameLoop():
-    global high_score, Length_of_snake, snake_speed, start_time, current_background, controls, power_up_x, power_up_y, power_up_active, power_up_end_time
-    global x1, y1, x1_change, y1_change, snake_List, foodx, foody, special_food_x, special_food_y, obstacles, level, food_speed
+    global snake_color, background_color, current_background, sound_enabled, high_score, snake_speed, food_speed, obstacles, power_ups, controls
 
-    game_over = False
-    game_close = False
+    # Initialize the controls and sound
+    controls = load_controls()
+    sound_enabled = True  # Ensure sound is enabled at the start
 
-    levels = load_levels()
-    level = 0
-    start_next_level(level, levels)
+    # Initialize the snake and other variables
+    snake_color = green
+    background_color = black
+    obstacles = []
+    power_ups = []
 
     x1 = screen_width / 2
     y1 = screen_height / 2
-
     x1_change = 0
     y1_change = 0
 
@@ -873,74 +879,76 @@ def gameLoop():
     foodx = round(random.randrange(0, screen_width - snake_block) / 10.0) * 10.0
     foody = round(random.randrange(0, screen_height - snake_block) / 10.0) * 10.0
 
-    special_food_x = round(random.randrange(0, screen_width - snake_block) / 10.0) * 10.0
-    special_food_y = round(random.randrange(0, screen_height - snake_block) / 10.0) * 10.0
+    power_up = create_power_up()
 
+    game_close = False
+    game_over = False
     start_time = time.time()
-    controls = load_controls()
-    achievements = load_achievements()
 
-    while not game_over:
-
-        while game_close == True:
+    while not game_close:
+        while game_over:
+            screen.fill(background_color)
             game_over_screen(Length_of_snake - 1, int(time.time() - start_time))
-            game_over = True
+            pygame.display.update()
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    game_close = True
+                    game_over = False
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_q:
+                        game_close = True
+                        game_over = False
+                    if event.key == pygame.K_c:
+                        gameLoop()
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                game_over = True
+                game_close = True
             if event.type == pygame.KEYDOWN:
                 if event.key == controls["left"]:
-                    x1_change = -snake_block
-                    y1_change = 0
+                    if x1_change == 0:  # Prevent reversing direction
+                        x1_change = -snake_block
+                        y1_change = 0
                 elif event.key == controls["right"]:
-                    x1_change = snake_block
-                    y1_change = 0
+                    if x1_change == 0:
+                        x1_change = snake_block
+                        y1_change = 0
                 elif event.key == controls["up"]:
-                    x1_change = 0
-                    y1_change = -snake_block
+                    if y1_change == 0:
+                        y1_change = -snake_block
+                        x1_change = 0
                 elif event.key == controls["down"]:
-                    x1_change = 0
-                    y1_change = snake_block
+                    if y1_change == 0:
+                        y1_change = snake_block
+                        x1_change = 0
                 elif event.key == controls["pause"]:
                     pause_menu()
                 elif event.key == controls["change_color"]:
                     change_snake_color()
+                elif event.key == pygame.K_s:
+                    save_game_state()
 
         if x1 >= screen_width or x1 < 0 or y1 >= screen_height or y1 < 0:
-            pygame.mixer.Sound.play(game_over_sound)
-            game_close = True
+            if sound_enabled:
+                pygame.mixer.Sound.play(game_over_sound)
+            game_over = True
+
         x1 += x1_change
         y1 += y1_change
-        screen.fill(background_colors[current_background])
-        pygame.draw.rect(screen, green, [foodx, foody, snake_block, snake_block])
-        draw_special_food(special_food_x, special_food_y, orange)
-        draw_power_up(power_up_x, power_up_y, pink)
-        snake_Head = []
-        snake_Head.append(x1)
-        snake_Head.append(y1)
-        snake_List.append(snake_Head)
-        if len(snake_List) > Length_of_snake:
-            del snake_List[0]
 
-        for x in snake_List[:-1]:
-            if x == snake_Head:
-                pygame.mixer.Sound.play(game_over_sound)
-                game_close = True
-
-        for obstacle in obstacles:
-            if x1 == obstacle[0] and y1 == obstacle[1]:
-                pygame.mixer.Sound.play(game_over_sound)
-                game_close = True
-
+        screen.fill(background_color)
+        pygame.draw.rect(screen, red, [foodx, foody, snake_block, snake_block])
+        draw_power_up(power_up[0], power_up[1], yellow)
         our_snake(snake_block, snake_List)
-        draw_obstacles(obstacles)
         Your_score(Length_of_snake - 1)
         display_high_score()
         display_timer(start_time)
+        pygame.display.update()
 
+        # Check for collision with food
         if x1 == foodx and y1 == foody:
-            pygame.mixer.Sound.play(eat_sound)
+            if sound_enabled:
+                pygame.mixer.Sound.play(eat_sound)
             foodx = round(random.randrange(0, screen_width - snake_block) / 10.0) * 10.0
             foody = round(random.randrange(0, screen_height - snake_block) / 10.0) * 10.0
             Length_of_snake += 1
@@ -952,34 +960,33 @@ def gameLoop():
                     start_next_level(level, levels)
                 else:
                     # Game completed
-                    screen.fill(black)
+                    screen.fill(background_color)
                     message("Congratulations! You completed all levels!", yellow, 0, size="large")
                     pygame.display.update()
                     pygame.time.delay(5000)
                     game_over = True
 
-        if x1 == special_food_x and y1 == special_food_y:
-            pygame.mixer.Sound.play(power_up_sound)
-            special_food_x = round(random.randrange(0, screen_width - snake_block) / 10.0) * 10.0
-            special_food_y = round(random.randrange(0, screen_height - snake_block) / 10.0) * 10.0
+        # Check for collision with power-up
+        if x1 == power_up[0] and y1 == power_up[1]:
+            if sound_enabled:
+                pygame.mixer.Sound.play(power_up_sound)
+            power_up = create_power_up()
 
-            # Apply speed boost or slow down
-            if random.choice([True, False]):
-                snake_speed += 5
-            else:
-                snake_speed = max(10, snake_speed - 5)
+        # Add the new head position to the snake
+        snake_Head = []
+        snake_Head.append(x1)
+        snake_Head.append(y1)
+        snake_List.append(snake_Head)
 
-        if x1 == power_up_x and y1 == power_up_y:
-            pygame.mixer.Sound.play(power_up_sound)
-            power_up_x, power_up_y = create_power_up()
-            apply_power_up(random.choice(["invincibility", "double_score"]), 10)
+        if len(snake_List) > Length_of_snake:
+            del snake_List[0]
 
-        if power_up_active and time.time() > power_up_end_time:
-            reset_power_up_effects()
+        for x in snake_List[:-1]:
+            if x == snake_Head:
+                if sound_enabled:
+                    pygame.mixer.Sound.play(game_over_sound)
+                game_over = True
 
-        check_achievements(Length_of_snake - 1, achievements, snake_speed)
-        save_achievements(achievements)
-        
         clock.tick(snake_speed)
 
     pygame.quit()
