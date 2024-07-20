@@ -22,9 +22,12 @@ blue = (50, 153, 213)
 purple = (128, 0, 128)
 orange = (255, 165, 0)
 pink = (255, 105, 180)
+gray = (169, 169, 169)
+light_blue = (173, 216, 230)
+dark_green = (0, 100, 0)
 
 # Dynamic backgrounds
-background_colors = [blue, (70, 130, 180), (100, 149, 237), (135, 206, 235)]
+background_colors = [blue, (70, 130, 180), (100, 149, 237), (135, 206, 235), light_blue, gray, dark_green]
 current_background = 0
 
 # Snake color
@@ -42,10 +45,13 @@ eat_sound = pygame.mixer.Sound("eat.wav")
 game_over_sound = pygame.mixer.Sound("game_over.wav")
 level_up_sound = pygame.mixer.Sound("level_up.wav")
 power_up_sound = pygame.mixer.Sound("power_up.wav")
+button_click_sound = pygame.mixer.Sound("button_click.wav")
+background_music = pygame.mixer.music.load("background_music.mp3")
 
 # Set the font style and size
 font_style = pygame.font.SysFont(None, 50)
 score_font = pygame.font.SysFont(None, 35)
+small_font = pygame.font.SysFont(None, 25)
 
 # Function to display the score
 def Your_score(score):
@@ -124,7 +130,8 @@ def start_screen():
         "Eat green food to grow",
         "Avoid purple obstacles",
         "Orange food changes speed",
-        "Pink food for power-ups"
+        "Pink food for power-ups",
+        "Press O for Options"
     ]
     y_offset = screen_height / 3 + 50
     for line in instructions:
@@ -141,6 +148,8 @@ def start_screen():
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_s:
                     start = True
+                elif event.key == pygame.K_o:
+                    options_menu()
 
 # Pause menu function
 def pause_menu():
@@ -254,19 +263,32 @@ def customize_controls():
         screen.blit(instr, [screen_width / 6, y_offset])
         y_offset += 30
     pygame.display.update()
-    custom_controls = {}
-    actions = ["left", "right", "up", "down", "pause", "change_color"]
-    for action in actions:
-        key_selected = False
-        while not key_selected:
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    pygame.quit()
-                    quit()
-                if event.type == pygame.KEYDOWN:
-                    custom_controls[action] = event.key
-                    key_selected = True
-    save_controls(custom_controls)
+
+    controls = load_controls()
+    key_map = {
+        pygame.K_l: "left",
+        pygame.K_r: "right",
+        pygame.K_u: "up",
+        pygame.K_d: "down",
+        pygame.K_p: "pause",
+        pygame.K_c: "change_color"
+    }
+    key_selected = None
+
+    while key_selected is None:
+        for event in pygame.event.get():
+            if event.type == pygame.KEYDOWN:
+                for key, action in key_map.items():
+                    if event.key == key:
+                        key_selected = action
+                        break
+                if key_selected:
+                    key_selected = None
+                    for action in controls.keys():
+                        if action != key_selected:
+                            controls[action] = event.key
+                            save_controls(controls)
+                            break
 
 # Main game loop
 def gameLoop():
