@@ -183,6 +183,52 @@ def pause_menu():
 def draw_special_food(x, y, color):
     pygame.draw.rect(screen, color, [x, y, snake_block, snake_block])
 
+# Function to load achievements
+def load_achievements():
+    try:
+        with open("achievements.json", "r") as achievements_file:
+            achievements = json.load(achievements_file)
+    except FileNotFoundError:
+        achievements = {
+            "First Food": False,
+            "10 Foods": False,
+            "20 Foods": False,
+            "First Special Food": False,
+            "Speed Boost": False,
+            "Invincibility": False
+        }
+    return achievements
+
+# Function to save achievements
+def save_achievements(achievements):
+    with open("achievements.json", "w") as achievements_file:
+        json.dump(achievements, achievements_file)
+
+# Function to check and unlock achievements
+def check_achievements(score, achievements, snake_speed):
+    if score >= 1 and not achievements["First Food"]:
+        achievements["First Food"] = True
+        display_achievement("First Food")
+    if score >= 10 and not achievements["10 Foods"]:
+        achievements["10 Foods"] = True
+        display_achievement("10 Foods")
+    if score >= 20 and not achievements["20 Foods"]:
+        achievements["20 Foods"] = True
+        display_achievement("20 Foods")
+    if snake_speed > 15 and not achievements["Speed Boost"]:
+        achievements["Speed Boost"] = True
+        display_achievement("Speed Boost")
+    if power_up_active and not achievements["Invincibility"]:
+        achievements["Invincibility"] = True
+        display_achievement("Invincibility")
+
+# Function to display achievement notifications
+def display_achievement(achievement):
+    screen.fill(black)
+    message(f"Achievement Unlocked: {achievement}", yellow, 0, size="large")
+    pygame.display.update()
+    pygame.time.delay(2000)
+
 # Function to display timer
 def display_timer(start_time):
     elapsed_time = int(time.time() - start_time)
@@ -483,6 +529,7 @@ def gameLoop():
     level = 1
     start_time = time.time()
     controls = load_controls()
+    achievements = load_achievements()
 
     while not game_over:
 
@@ -576,6 +623,9 @@ def gameLoop():
         if power_up_active and time.time() > power_up_end_time:
             reset_power_up_effects()
 
+        check_achievements(Length_of_snake - 1, achievements, snake_speed)
+        save_achievements(achievements)
+        
         clock.tick(snake_speed)
 
     pygame.quit()
