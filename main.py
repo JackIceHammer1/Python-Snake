@@ -480,6 +480,73 @@ def update_leaderboard(new_score):
     leaderboard = sorted(leaderboard, key=lambda x: x['score'], reverse=True)[:10]
     save_leaderboard(leaderboard)
 
+# Function to save the game state
+def save_game_state():
+    global high_score, Length_of_snake, snake_speed, start_time, current_background, controls, power_up_x, power_up_y, power_up_active, power_up_end_time
+    global x1, y1, x1_change, y1_change, snake_List, foodx, foody, special_food_x, special_food_y, obstacles, level, food_speed
+
+    game_state = {
+        "x1": x1,
+        "y1": y1,
+        "x1_change": x1_change,
+        "y1_change": y1_change,
+        "snake_List": snake_List,
+        "Length_of_snake": Length_of_snake,
+        "foodx": foodx,
+        "foody": foody,
+        "special_food_x": special_food_x,
+        "special_food_y": special_food_y,
+        "obstacles": obstacles,
+        "level": level,
+        "high_score": high_score,
+        "snake_speed": snake_speed,
+        "food_speed": food_speed,
+        "start_time": start_time,
+        "current_background": current_background,
+        "controls": controls,
+        "power_up_x": power_up_x,
+        "power_up_y": power_up_y,
+        "power_up_active": power_up_active,
+        "power_up_end_time": power_up_end_time
+    }
+
+    with open("game_state.json", "w") as game_state_file:
+        json.dump(game_state, game_state_file)
+
+# Function to load the game state
+def load_game_state():
+    global high_score, Length_of_snake, snake_speed, start_time, current_background, controls, power_up_x, power_up_y, power_up_active, power_up_end_time
+    global x1, y1, x1_change, y1_change, snake_List, foodx, foody, special_food_x, special_food_y, obstacles, level, food_speed
+
+    try:
+        with open("game_state.json", "r") as game_state_file:
+            game_state = json.load(game_state_file)
+
+            x1 = game_state["x1"]
+            y1 = game_state["y1"]
+            x1_change = game_state["x1_change"]
+            y1_change = game_state["y1_change"]
+            snake_List = game_state["snake_List"]
+            Length_of_snake = game_state["Length_of_snake"]
+            foodx = game_state["foodx"]
+            foody = game_state["foody"]
+            special_food_x = game_state["special_food_x"]
+            special_food_y = game_state["special_food_y"]
+            obstacles = game_state["obstacles"]
+            level = game_state["level"]
+            high_score = game_state["high_score"]
+            snake_speed = game_state["snake_speed"]
+            food_speed = game_state["food_speed"]
+            start_time = game_state["start_time"]
+            current_background = game_state["current_background"]
+            controls = game_state["controls"]
+            power_up_x = game_state["power_up_x"]
+            power_up_y = game_state["power_up_y"]
+            power_up_active = game_state["power_up_active"]
+            power_up_end_time = game_state["power_up_end_time"]
+    except FileNotFoundError:
+        pass
+
 # Function to display the leaderboard
 def display_leaderboard():
     leaderboard = load_leaderboard()
@@ -596,7 +663,7 @@ def change_background_color_menu(backgrounds):
 def main_menu():
     menu_running = True
     selected_option = 0
-    options = ["Start Game", "Settings", "Leaderboard", "Quit"]
+    options = ["Start New Game", "Load Game", "Settings", "Leaderboard", "Quit"]
 
     while menu_running:
         screen.fill(black)
@@ -616,7 +683,10 @@ def main_menu():
                 elif event.key == pygame.K_DOWN:
                     selected_option = (selected_option + 1) % len(options)
                 elif event.key == pygame.K_RETURN:
-                    if options[selected_option] == "Start Game":
+                    if options[selected_option] == "Start New Game":
+                        gameLoop()
+                    elif options[selected_option] == "Load Game":
+                        load_game_state()
                         gameLoop()
                     elif options[selected_option] == "Settings":
                         settings_menu()
@@ -625,6 +695,109 @@ def main_menu():
                     elif options[selected_option] == "Quit":
                         pygame.quit()
                         quit()
+
+# Update the game loop to include saving the game state
+def gameLoop():
+    global high_score, Length_of_snake, snake_speed, start_time, current_background, controls, power_up_x, power_up_y, power_up_active, power_up_end_time
+    global x1, y1, x1_change, y1_change, snake_List, foodx, foody, special_food_x, special_food_y, obstacles, level, food_speed
+
+    game_over = False
+    game_close = False
+
+    while not game_over:
+
+        while game_close == True:
+            game_over_screen(Length_of_snake - 1, int(time.time() - start_time))
+            game_over = True
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                save_game_state()
+                pygame.quit()
+                quit()
+            if event.type == pygame.KEYDOWN:
+                if event.key == controls["left"]:
+                    x1_change = -snake_block
+                    y1_change = 0
+                elif event.key == controls["right"]:
+                    x1_change = snake_block
+                    y1_change = 0
+                elif event.key == controls["up"]:
+                    x1_change = 0
+                    y1_change = -snake_block
+                elif event.key == controls["down"]:
+                    x1_change = 0
+                    y1_change = snake_block
+                elif event.key == controls["pause"]:
+                    pause_menu()
+                elif event.key == controls["change_color"]:
+                    change_snake_color()
+                elif event.key == pygame.K_s:
+                    save_game_state()
+
+        if x1 >= screen_width or x1 < 0 or y1 >= screen_height or y1 < 0:
+            pygame.mixer.Sound.play(game_over_sound)
+            game_close = True
+        x1 += x1_change
+        y1 += y1_change
+        screen.fill(background_colors[current_background])
+        pygame.draw.rect(screen, green, [foodx, foody, snake_block, snake_block])
+        draw_special_food(special_food_x, special_food_y, orange)
+        draw_power_up(power_up_x, power_up_y, pink)
+        snake_Head = []
+        snake_Head.append(x1)
+        snake_Head.append(y1)
+        snake_List.append(snake_Head)
+        if len(snake_List) > Length_of_snake:
+            del snake_List[0]
+
+        for x in snake_List[:-1]:
+            if x == snake_Head:
+                pygame.mixer.Sound.play(game_over_sound)
+                game_close = True
+
+        for obstacle in obstacles:
+            if x1 == obstacle[0] and y1 == obstacle[1]:
+                pygame.mixer.Sound.play(game_over_sound)
+                game_close = True
+
+        our_snake(snake_block, snake_List)
+        draw_obstacles(obstacles)
+        Your_score(Length_of_snake - 1)
+        display_high_score()
+        display_timer(start_time)
+
+        if x1 == foodx and y1 == foody:
+            pygame.mixer.Sound.play(eat_sound)
+            foodx = round(random.randrange(0, screen_width - snake_block) / 10.0) * 10.0
+            foody = round(random.randrange(0, screen_height - snake_block) / 10.0) * 10.0
+            Length_of_snake += 1
+
+        if x1 == special_food_x and y1 == special_food_y:
+            pygame.mixer.Sound.play(power_up_sound)
+            special_food_x = round(random.randrange(0, screen_width - snake_block) / 10.0) * 10.0
+            special_food_y = round(random.randrange(0, screen_height - snake_block) / 10.0) * 10.0
+
+            if random.choice([True, False]):
+                snake_speed += 5
+            else:
+                snake_speed = max(10, snake_speed - 5)
+
+        if x1 == power_up_x and y1 == power_up_y:
+            pygame.mixer.Sound.play(power_up_sound)
+            power_up_x, power_up_y = create_power_up()
+            apply_power_up(random.choice(["invincibility", "double_score"]), 10)
+
+        if power_up_active and time.time() > power_up_end_time:
+            reset_power_up_effects()
+
+        check_achievements(Length_of_snake - 1, achievements, snake_speed)
+        save_achievements(achievements)
+        
+        clock.tick(snake_speed)
+
+    pygame.quit()
+    quit()
 
 # Function to toggle sound on and off
 def toggle_sound():
