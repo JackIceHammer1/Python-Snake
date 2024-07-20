@@ -155,27 +155,29 @@ def start_screen():
 # Pause menu function
 def pause_menu():
     paused = True
-    menu_options = ["Resume (Press P)", "Restart (Press R)", "Quit (Press Q)"]
-    screen.fill(background_colors[current_background])
-    y_offset = screen_height / 3
-    for option in menu_options:
-        opt = score_font.render(option, True, yellow)
-        screen.blit(opt, [screen_width / 6, y_offset])
-        y_offset += 50
-    pygame.display.update()
     while paused:
+        screen.fill(black)
+        message("Paused", white, -100, size="large")
+        message("Press C to Continue", white, -50)
+        message("Press Q to Quit", white, 0)
+        message("Press S for Save/Load", white, 50)
+        message("Press L to View Leaderboard", white, 100)
+        pygame.display.update()
+        
         for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                quit()
             if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_p:
+                if event.key == pygame.K_c:
                     paused = False
-                elif event.key == pygame.K_r:
-                    reset_game()
                 elif event.key == pygame.K_q:
                     pygame.quit()
                     quit()
+                elif event.key == pygame.K_s:
+                    save_load_menu()
+                elif event.key == pygame.K_l:
+                    display_leaderboard()
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                quit()
 
 # Function to draw special food
 def draw_special_food(x, y, color):
@@ -188,34 +190,34 @@ def display_timer(start_time):
     screen.blit(timer_text, [screen_width - 200, 30])
 
 # Function to display game over statistics
-def game_over_screen(score, time_elapsed):
-    screen.fill(background_colors[current_background])
-    message("Game Over!", red)
-    stats = [
-        f"Score: {score}",
-        f"Time: {time_elapsed} seconds",
-        f"High Score: {high_score}"
-    ]
-    y_offset = screen_height / 3 + 50
-    for stat in stats:
-        stat_text = score_font.render(stat, True, white)
-        screen.blit(stat_text, [screen_width / 6, y_offset])
-        y_offset += 30
-    menu_options = ["Restart (Press R)", "Quit (Press Q)"]
-    for option in menu_options:
-        opt = score_font.render(option, True, yellow)
-        screen.blit(opt, [screen_width / 6, y_offset])
-        y_offset += 50
+def game_over_screen(score, duration):
+    screen.fill(black)
+    message("Game Over", red, -50, size="large")
+    message(f"Score: {score}", white, 0)
+    message(f"Time: {duration} seconds", white, 50)
+    message("Press Q to Quit", white, 100)
+    message("Press R to Restart", white, 150)
+    message("Press L to View Leaderboard", white, 200)
     pygame.display.update()
-    game_over = True
-    while game_over:
+
+    # Update leaderboard
+    player_name = "Player"  # Replace with actual player name if available
+    update_leaderboard({"name": player_name, "score": score})
+
+    waiting = True
+    while waiting:
         for event in pygame.event.get():
             if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_r:
-                    reset_game()
-                elif event.key == pygame.K_q:
+                if event.key == pygame.K_q:
                     pygame.quit()
                     quit()
+                elif event.key == pygame.K_r:
+                    gameLoop()
+                elif event.key == pygame.K_l:
+                    display_leaderboard()
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                quit()
 
 # Function to change snake color
 def change_snake_color():
@@ -411,26 +413,45 @@ def save_load_menu():
                 pygame.quit()
                 quit()
 
-# Add save/load options in the pause menu
-def pause_menu():
-    paused = True
-    while paused:
-        screen.fill(black)
-        message("Paused", white, -100, size="large")
-        message("Press C to Continue", white, -50)
-        message("Press Q to Quit", white, 0)
-        message("Press S for Save/Load", white, 50)
-        pygame.display.update()
-        
+# Function to load the leaderboard
+def load_leaderboard():
+    try:
+        with open("leaderboard.json", "r") as leaderboard_file:
+            leaderboard = json.load(leaderboard_file)
+    except FileNotFoundError:
+        leaderboard = []
+    return leaderboard
+
+# Function to save the leaderboard
+def save_leaderboard(leaderboard):
+    with open("leaderboard.json", "w") as leaderboard_file:
+        json.dump(leaderboard, leaderboard_file)
+
+# Function to update the leaderboard
+def update_leaderboard(new_score):
+    leaderboard = load_leaderboard()
+    leaderboard.append(new_score)
+    leaderboard = sorted(leaderboard, key=lambda x: x['score'], reverse=True)[:10]
+    save_leaderboard(leaderboard)
+
+# Function to display the leaderboard
+def display_leaderboard():
+    leaderboard = load_leaderboard()
+    screen.fill(black)
+    message("Leaderboard", white, -100, size="large")
+    y_offset = -50
+    for index, entry in enumerate(leaderboard):
+        message(f"{index + 1}. {entry['name']} - {entry['score']}", white, y_offset)
+        y_offset += 30
+    message("Press B to go back", white, y_offset + 50)
+    pygame.display.update()
+    
+    waiting = True
+    while waiting:
         for event in pygame.event.get():
             if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_c:
-                    paused = False
-                elif event.key == pygame.K_q:
-                    pygame.quit()
-                    quit()
-                elif event.key == pygame.K_s:
-                    save_load_menu()
+                if event.key == pygame.K_b:
+                    waiting = False
             if event.type == pygame.QUIT:
                 pygame.quit()
                 quit()
