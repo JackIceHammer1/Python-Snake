@@ -502,13 +502,58 @@ def display_leaderboard():
                 pygame.quit()
                 quit()
 
-# Add save/load controls in the game loop
+# Function to load levels
+def load_levels():
+    try:
+        with open("levels.json", "r") as levels_file:
+            levels = json.load(levels_file)
+    except FileNotFoundError:
+        levels = [
+            {
+                "obstacles": [],
+                "food_speed": 10,
+                "snake_speed": 15
+            },
+            {
+                "obstacles": [(100, 100), (200, 200), (300, 300)],
+                "food_speed": 10,
+                "snake_speed": 20
+            },
+            {
+                "obstacles": [(150, 150), (250, 250), (350, 350), (450, 450)],
+                "food_speed": 8,
+                "snake_speed": 25
+            }
+        ]
+    return levels
+
+# Function to display level transition
+def display_level_transition(level):
+    screen.fill(black)
+    message(f"Level {level + 1}", white, 0, size="large")
+    pygame.display.update()
+    pygame.time.delay(3000)
+
+# Function to start the next level
+def start_next_level(level, levels):
+    global obstacles, snake_speed, food_speed
+
+    obstacles = levels[level]["obstacles"]
+    snake_speed = levels[level]["snake_speed"]
+    food_speed = levels[level]["food_speed"]
+    display_level_transition(level)
+
+# Main loop
 def gameLoop():
     global high_score, Length_of_snake, snake_speed, start_time, current_background, controls, power_up_x, power_up_y, power_up_active, power_up_end_time
-    global x1, y1, x1_change, y1_change, snake_List, foodx, foody, special_food_x, special_food_y, obstacles, level
+    global x1, y1, x1_change, y1_change, snake_List, foodx, foody, special_food_x, special_food_y, obstacles, level, food_speed
 
     game_over = False
     game_close = False
+
+    levels = load_levels()
+    level = 0
+    start_next_level(level, levels)
 
     x1 = screen_width / 2
     y1 = screen_height / 2
@@ -525,8 +570,6 @@ def gameLoop():
     special_food_x = round(random.randrange(0, screen_width - snake_block) / 10.0) * 10.0
     special_food_y = round(random.randrange(0, screen_height - snake_block) / 10.0) * 10.0
 
-    obstacles = create_obstacles(5)
-    level = 1
     start_time = time.time()
     controls = load_controls()
     achievements = load_achievements()
@@ -599,10 +642,15 @@ def gameLoop():
             # Increase the level and speed every 5 food items eaten
             if Length_of_snake % 5 == 0:
                 level += 1
-                pygame.mixer.Sound.play(level_up_sound)
-                snake_speed += 5
-                current_background = (current_background + 1) % len(background_colors)
-                obstacles = create_obstacles(level + 4)
+                if level < len(levels):
+                    start_next_level(level, levels)
+                else:
+                    # Game completed
+                    screen.fill(black)
+                    message("Congratulations! You completed all levels!", yellow, 0, size="large")
+                    pygame.display.update()
+                    pygame.time.delay(5000)
+                    game_over = True
 
         if x1 == special_food_x and y1 == special_food_y:
             pygame.mixer.Sound.play(power_up_sound)
