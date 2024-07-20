@@ -2,6 +2,7 @@ import pygame
 import time
 import random
 import os
+import json
 
 # Initialize Pygame and the mixer for sound
 pygame.init()
@@ -324,9 +325,121 @@ power_up_x, power_up_y = create_power_up()
 power_up_active = None
 power_up_end_time = 0
 
-# Main game loop
+# Function to save the game state
+def save_game():
+    game_state = {
+        "x1": x1,
+        "y1": y1,
+        "x1_change": x1_change,
+        "y1_change": y1_change,
+        "snake_List": snake_List,
+        "Length_of_snake": Length_of_snake,
+        "foodx": foodx,
+        "foody": foody,
+        "special_food_x": special_food_x,
+        "special_food_y": special_food_y,
+        "obstacles": obstacles,
+        "level": level,
+        "snake_speed": snake_speed,
+        "start_time": start_time,
+        "current_background": current_background,
+        "power_up_x": power_up_x,
+        "power_up_y": power_up_y,
+        "power_up_active": power_up_active,
+        "power_up_end_time": power_up_end_time,
+        "high_score": high_score,
+        "controls": controls
+    }
+    with open("save_game.json", "w") as save_file:
+        json.dump(game_state, save_file)
+
+# Function to load the game state
+def load_game():
+    global x1, y1, x1_change, y1_change, snake_List, Length_of_snake, foodx, foody, special_food_x, special_food_y
+    global obstacles, level, snake_speed, start_time, current_background, power_up_x, power_up_y, power_up_active, power_up_end_time
+    global high_score, controls
+    
+    try:
+        with open("save_game.json", "r") as save_file:
+            game_state = json.load(save_file)
+            x1 = game_state["x1"]
+            y1 = game_state["y1"]
+            x1_change = game_state["x1_change"]
+            y1_change = game_state["y1_change"]
+            snake_List = game_state["snake_List"]
+            Length_of_snake = game_state["Length_of_snake"]
+            foodx = game_state["foodx"]
+            foody = game_state["foody"]
+            special_food_x = game_state["special_food_x"]
+            special_food_y = game_state["special_food_y"]
+            obstacles = game_state["obstacles"]
+            level = game_state["level"]
+            snake_speed = game_state["snake_speed"]
+            start_time = game_state["start_time"]
+            current_background = game_state["current_background"]
+            power_up_x = game_state["power_up_x"]
+            power_up_y = game_state["power_up_y"]
+            power_up_active = game_state["power_up_active"]
+            power_up_end_time = game_state["power_up_end_time"]
+            high_score = game_state["high_score"]
+            controls = game_state["controls"]
+    except FileNotFoundError:
+        print("No saved game found!")
+
+# Function to display the save/load menu
+def save_load_menu():
+    menu = True
+    while menu:
+        screen.fill(black)
+        message("Save/Load Game", white, -50, size="large")
+        message("S - Save Game", white, 0)
+        message("L - Load Game", white, 50)
+        message("B - Back to Game", white, 100)
+        pygame.display.update()
+        
+        for event in pygame.event.get():
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_s:
+                    save_game()
+                    menu = False
+                elif event.key == pygame.K_l:
+                    load_game()
+                    menu = False
+                elif event.key == pygame.K_b:
+                    menu = False
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                quit()
+
+# Add save/load options in the pause menu
+def pause_menu():
+    paused = True
+    while paused:
+        screen.fill(black)
+        message("Paused", white, -100, size="large")
+        message("Press C to Continue", white, -50)
+        message("Press Q to Quit", white, 0)
+        message("Press S for Save/Load", white, 50)
+        pygame.display.update()
+        
+        for event in pygame.event.get():
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_c:
+                    paused = False
+                elif event.key == pygame.K_q:
+                    pygame.quit()
+                    quit()
+                elif event.key == pygame.K_s:
+                    save_load_menu()
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                quit()
+
+# Add save/load controls in the game loop
 def gameLoop():
     global high_score, Length_of_snake, snake_speed, start_time, current_background, controls, power_up_x, power_up_y, power_up_active, power_up_end_time
+    global x1, y1, x1_change, y1_change, snake_List, foodx, foody, special_food_x, special_food_y, obstacles, level
+
     game_over = False
     game_close = False
 
